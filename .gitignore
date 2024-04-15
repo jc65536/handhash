@@ -1,0 +1,7 @@
+exemplars
+hierarchies
+processed_exemplars
+__pycache__
+*.h5
+*.mp4
+*.pkl
