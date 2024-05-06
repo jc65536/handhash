@@ -28,11 +28,22 @@ def calculate_finger_lengths(hand_landmarks):
     return thumb_length, middle_finger_length, pinky_length
 
 
-def normalize_hand(numpy_hand, for_display=False):
+def normalize_hand(numpy_hand, img_shape, for_display=False):
+    w, h = img_shape
+
     # Translate hand so the wrist is at the origin
     wrist = numpy_hand[0, :]
     numpy_hand -= wrist
-    
+
+    # Un-normalize to enable rotation without horizontal scaling
+    numpy_hand[:, 0] *= w
+    numpy_hand[:, 1] *= h
+
+    # Not really sure what to scale z index by
+    # Apparently it is arbitrary
+    # https://github.com/google/mediapipe/issues/742#issuecomment-844301612
+    numpy_hand[:, 2] *= np.sqrt(w * h)
+
     # Define points for plane computation
     p1, p2, p3 = numpy_hand[0], numpy_hand[5], numpy_hand[17]
 
@@ -50,7 +61,7 @@ def normalize_hand(numpy_hand, for_display=False):
     # Assume calculate_finger_lengths is a defined function that returns lengths
     thumb_length, middle_finger_length, pinky_length = calculate_finger_lengths(rotated_landmarks)
     total_length = thumb_length + middle_finger_length + pinky_length
-    scaled_landmarks = rotated_landmarks / total_length
+    scaled_landmarks = rotated_landmarks / total_length * np.sqrt(w * h)
 
     # Align points 0 and 5 with the X-axis
     p0_rotated, p5_rotated = scaled_landmarks[0], scaled_landmarks[9]
@@ -59,6 +70,10 @@ def normalize_hand(numpy_hand, for_display=False):
     angle_to_x_axis = np.arctan2(v05_rotated[0], v05_rotated[1])
     rotation_correction = R.from_euler('z', angle_to_x_axis + np.pi)
     final_rotated_landmarks = rotation_correction.apply(scaled_landmarks)
+
+    # Re-normalize
+    final_rotated_landmarks[:, 0] /= w
+    final_rotated_landmarks[:, 1] /= h
 
     # Center the hand in the desired frame
     if for_display:
@@ -71,9 +86,9 @@ def hand_to_numpy(hand_landmarks):
     return np.array([[lm.x, lm.y, lm.z] for lm in hand_landmarks.landmark])
 
 
-def clean(hand_landmarks, for_display=False):
+def clean(hand_landmarks, img_shape, for_display=False):
     numpy_hand = hand_to_numpy(hand_landmarks)
-    return normalize_hand(numpy_hand, for_display)
+    return normalize_hand(numpy_hand, img_shape, for_display)
 
 
 def clean_2(landmarks):

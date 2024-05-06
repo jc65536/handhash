@@ -147,6 +147,8 @@ if not cap.isOpened():
     exit()
 
 
+w = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+h = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
 while True:
     ret, frame = cap.read()
@@ -167,8 +169,7 @@ while True:
     if results.multi_hand_landmarks:
         for hand_landmarks in results.multi_hand_landmarks:
             # Convert hand landmarks to an array format for processing
-            normalized_landmarks = clean(hand_landmarks, True)
-            print(normalized_landmarks.shape)
+            normalized_landmarks = clean(hand_landmarks, (w, h), True)
             
             # Convert normalized landmarks back to the required format for drawing
             for idx, lm in enumerate(hand_landmarks.landmark):
